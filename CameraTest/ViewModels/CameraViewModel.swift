@@ -23,11 +23,9 @@ class CameraViewModel {
             fatalError()
         }
         backCamera = captureDevice
-        do {
-            let input = try AVCaptureDeviceInput(device: backCamera)
-        } catch {
-            fatalError("\(error)")
-        }
+        let input = try! AVCaptureDeviceInput(device: backCamera)
+
+        captureSession.addInput(input)
         let output = AVCaptureStillImageOutput()
         
         captureSession.addOutput(output)
@@ -40,7 +38,7 @@ class CameraViewModel {
     }
     
     private func getBackCamera() -> AVCaptureDevice? {
-        guard let avCaptureDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: .front) else {
+        guard let avCaptureDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: .back) else {
             return nil
         }
         for device in avCaptureDeviceDiscoverySession.devices {

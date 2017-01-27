@@ -24,7 +24,7 @@
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
-    <key>NSPhotoLibraryUsageDescription</key>
+    <key>NSCameraUsageDescription</key>
     <string>写真の撮影のためにカメラを使用します</string>
     <key>NSPhotoLibraryUsageDescription</key>
     <string>撮影した写真の保存のために端末にアクセスします</string>

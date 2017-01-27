@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import AVFoundation
 
 class CameraViewController: UIViewController {
 
@@ -17,7 +18,6 @@ class CameraViewController: UIViewController {
         
         let viewModel = CameraViewModel(shutterTaps: shutterOutlet.rx.tap.asObservable())
         viewModel.videoLayer.frame = view.bounds
-        
         view.layer.addSublayer(viewModel.videoLayer)
         view.bringSubview(toFront: shutterOutlet)
     }
