@@ -8,11 +8,18 @@
 
 import UIKit
 
-class ViewController: UIViewController {
+class CameraViewController: UIViewController {
+
+    @IBOutlet weak var shutterOutlet: UIButton!
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
+        
+        let viewModel = CameraViewModel(shutterTaps: shutterOutlet.rx.tap.asObservable())
+        viewModel.videoLayer.frame = view.bounds
+        
+        view.layer.addSublayer(viewModel.videoLayer)
+        view.bringSubview(toFront: shutterOutlet)
     }
 
     override func didReceiveMemoryWarning() {
