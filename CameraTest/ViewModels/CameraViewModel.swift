@@ -11,13 +11,18 @@ import AVFoundation
 import RxSwift
 import RxCocoa
 
-class CameraViewModel {
+class CameraViewModel: NSObject {
     
     var backCamera: AVCaptureDevice!
-    
+    var output: AVCapturePhotoOutput!
     var videoLayer: AVCaptureVideoPreviewLayer!
+    var takenPhoto: Driver<UIImage>!
+    var photoDidBeTaken: Driver<Void>!
+    var image: Variable<UIImage>!
+    let disposeBag = DisposeBag()
     
-    init(shutterTaps: Observable<Void>) {
+    init(shutterTaps: Driver<Void>) {
+        super.init()
         let captureSession = AVCaptureSession()
         guard let captureDevice = getBackCamera() else {
             fatalError()
@@ -26,15 +31,25 @@ class CameraViewModel {
         let input = try! AVCaptureDeviceInput(device: backCamera)
 
         captureSession.addInput(input)
-        let output = AVCaptureStillImageOutput()
-        
+        output = AVCapturePhotoOutput()
         captureSession.addOutput(output)
         
-        videoLayer = AVCaptureVideoPreviewLayer(session: captureSession)
-        videoLayer?.videoGravity = AVLayerVideoGravityResizeAspectFill
+        videoLayer = videoLayerSetUp(with: captureSession)
+
         captureSession.startRunning()
+        image = Variable(UIImage())
+        takenPhoto = image.asDriver()
         
-        
+        photoDidBeTaken = shutterTaps.map {
+            self.shutterDidTap()
+        }.asDriver()
+    
+    }
+    
+    private func videoLayerSetUp(with session: AVCaptureSession) -> AVCaptureVideoPreviewLayer? {
+        let videoLayer = AVCaptureVideoPreviewLayer(session: session)
+        videoLayer?.videoGravity = AVLayerVideoGravityResizeAspectFill
+        return videoLayer
     }
     
     private func getBackCamera() -> AVCaptureDevice? {
@@ -48,4 +63,30 @@ class CameraViewModel {
         }
         return nil
     }
+    
+    private func shutterDidTap() {
+        let settingsForMonitoring = AVCapturePhotoSettings()
+        settingsForMonitoring.flashMode = .auto
+        settingsForMonitoring.isAutoStillImageStabilizationEnabled = true
+        settingsForMonitoring.isHighResolutionPhotoEnabled = false
+        // シャッターを切る
+        output.capturePhoto(with: settingsForMonitoring, delegate: self)
+    }
 }
+
+extension CameraViewModel: AVCapturePhotoCaptureDelegate {
+    func capture(_ captureOutput: AVCapturePhotoOutput, didFinishProcessingPhotoSampleBuffer photoSampleBuffer: CMSampleBuffer?, previewPhotoSampleBuffer: CMSampleBuffer?, resolvedSettings: AVCaptureResolvedPhotoSettings, bracketSettings: AVCaptureBracketedStillImageSettings?, error: Error?) {
+        guard let photoSampleBuffer = photoSampleBuffer else {
+            return
+        }
+        guard let photoData = AVCapturePhotoOutput.jpegPhotoDataRepresentation(forJPEGSampleBuffer: photoSampleBuffer, previewPhotoSampleBuffer: previewPhotoSampleBuffer) else {
+            return
+        }
+        guard let takenImage = UIImage(data: photoData) else {
+            return
+        }
+        image.value = takenImage
+        videoLayer.removeFromSuperlayer()
+    }
+}
+

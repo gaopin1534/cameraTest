@@ -132,6 +132,7 @@
 		177AED581E39C5E300FB1802 /* CameraTest */ = {
 			isa = PBXGroup;
 			children = (
+				17969B9B1E404E2900F7C481 /* Extensions */,
 				1771CB111E39F7E0001A55BE /* ViewModels */,
 				1771CB101E39F7D7001A55BE /* Views */,
 				177AED591E39C5E300FB1802 /* AppDelegate.swift */,
@@ -159,6 +160,13 @@
 				177AED7B1E39C5E300FB1802 /* Info.plist */,
 			);
 			path = CameraTestUITests;
+			sourceTree = "<group>";
+		};
+		17969B9B1E404E2900F7C481 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Extensions;
 			sourceTree = "<group>";
 		};
 		E2D8B996FC8F0A3BE243D0F1 /* Frameworks */ = {

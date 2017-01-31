@@ -8,18 +8,25 @@
 
 import UIKit
 import AVFoundation
+import RxSwift
 
 class CameraViewController: UIViewController {
 
+    @IBOutlet weak var imageView: UIImageView!
     @IBOutlet weak var shutterOutlet: UIButton!
-
+    var viewModel: CameraViewModel!
+    let disposeBag = DisposeBag()
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let viewModel = CameraViewModel(shutterTaps: shutterOutlet.rx.tap.asObservable())
-        viewModel.videoLayer.frame = view.bounds
-        view.layer.addSublayer(viewModel.videoLayer)
-        view.bringSubview(toFront: shutterOutlet)
+        viewModel = CameraViewModel(shutterTaps: shutterOutlet.rx.tap.asDriver())
+        self.viewModel.videoLayer.frame = self.view.bounds
+        self.view.layer.addSublayer(self.viewModel.videoLayer)
+        self.view.bringSubview(toFront: self.shutterOutlet)
+        viewModel.takenPhoto.drive(imageView.rx.image).addDisposableTo(disposeBag)
+        viewModel.photoDidBeTaken.drive(onNext: {
+            self.viewModel.videoLayer.removeFromSuperlayer()
+        }).addDisposableTo(disposeBag)
     }
 
     override func didReceiveMemoryWarning() {
