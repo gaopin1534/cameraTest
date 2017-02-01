@@ -15,12 +15,11 @@ class CameraService {
     var output: AVCapturePhotoOutput!
     var captureSession: AVCaptureSession!
     var previewLayer: AVCaptureVideoPreviewLayer!
-    init(with bounds: CGRect) {
+    init() {
         captureSession = setUpCameraSession()
         previewLayer = videoLayerSetUp(with: captureSession)
-        previewLayer.frame = bounds
     }
-    
+
     private func setUpCameraSession() -> AVCaptureSession {
         let captureSession = AVCaptureSession()
         guard let captureDevice = getBackCamera() else {

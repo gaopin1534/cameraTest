@@ -25,8 +25,9 @@ class CameraViewModel: NSObject {
     
     init(input: (shutterTaps: Driver<Void>, removeTaps: Driver<CGRect>)) {
         super.init()
+        self.cameraService = CameraService()
         isCameraReady = input.removeTaps.map { bounds in
-            self.cameraService = CameraService(with: bounds)
+            self.cameraService.previewLayer.frame = bounds
             self.videoLayer = self.cameraService.previewLayer
         }
         image = Variable(UIImage())
