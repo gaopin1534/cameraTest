@@ -53,6 +53,7 @@
                     </view>
                     <connections>
                         <outlet property="imageView" destination="puA-b3-wBk" id="Tnl-dr-rRM"/>
+                        <outlet property="removeButton" destination="Mw3-5v-rGw" id="wEJ-zj-OKa"/>
                         <outlet property="shutterOutlet" destination="1OU-JK-k2f" id="RsJ-cT-Lx9"/>
                     </connections>
                 </viewController>

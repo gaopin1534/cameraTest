@@ -18,59 +18,23 @@ class CameraViewModel: NSObject {
     var videoLayer: AVCaptureVideoPreviewLayer!
     var takenPhoto: Driver<UIImage>!
     var photoDidBeTaken: Driver<Void>!
+    var isCameraReady: Driver<Void>!
     var image: Variable<UIImage>!
     let disposeBag = DisposeBag()
+    var cameraService: CameraService!
     
-    init(shutterTaps: Driver<Void>) {
+    init(input: (shutterTaps: Driver<Void>, removeTaps: Driver<CGRect>)) {
         super.init()
-        let captureSession = AVCaptureSession()
-        guard let captureDevice = getBackCamera() else {
-            fatalError()
+        isCameraReady = input.removeTaps.map { bounds in
+            self.cameraService = CameraService(with: bounds)
+            self.videoLayer = self.cameraService.previewLayer
         }
-        backCamera = captureDevice
-        let input = try! AVCaptureDeviceInput(device: backCamera)
-
-        captureSession.addInput(input)
-        output = AVCapturePhotoOutput()
-        captureSession.addOutput(output)
-        
-        videoLayer = videoLayerSetUp(with: captureSession)
-
-        captureSession.startRunning()
         image = Variable(UIImage())
         takenPhoto = image.asDriver()
         
-        photoDidBeTaken = shutterTaps.map {
-            self.shutterDidTap()
+        photoDidBeTaken = input.shutterTaps.map {
+            self.cameraService.shutterDidTaped(with: self)
         }.asDriver()
-    
-    }
-    
-    private func videoLayerSetUp(with session: AVCaptureSession) -> AVCaptureVideoPreviewLayer? {
-        let videoLayer = AVCaptureVideoPreviewLayer(session: session)
-        videoLayer?.videoGravity = AVLayerVideoGravityResizeAspectFill
-        return videoLayer
-    }
-    
-    private func getBackCamera() -> AVCaptureDevice? {
-        guard let avCaptureDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: .back) else {
-            return nil
-        }
-        for device in avCaptureDeviceDiscoverySession.devices {
-            if device.position == .back {
-                return device
-            }
-        }
-        return nil
-    }
-    
-    private func shutterDidTap() {
-        let settingsForMonitoring = AVCapturePhotoSettings()
-        settingsForMonitoring.flashMode = .auto
-        settingsForMonitoring.isAutoStillImageStabilizationEnabled = true
-        settingsForMonitoring.isHighResolutionPhotoEnabled = false
-        // シャッターを切る
-        output.capturePhoto(with: settingsForMonitoring, delegate: self)
     }
 }
 
