@@ -10,31 +10,71 @@ import Foundation
 import RxSwift
 import RxCocoa
 import AVFoundation
-class CameraService {
+
+enum CamPosition {
+    case front
+    case back
     
+    mutating func switchPosition() {
+        if self == .front {
+            self = .back
+        } else {
+            self = .front
+        }
+    }
+    
+    func toAVCapturePosition() -> AVCaptureDevicePosition {
+        switch(self) {
+        case .front:
+            return .front
+        case .back:
+            return .back
+        }
+    }
+    
+    func isBack() -> Bool {
+        return self == .back
+    }
+}
+class CameraService {
     var output: AVCapturePhotoOutput!
     var captureSession: AVCaptureSession!
     var previewLayer: AVCaptureVideoPreviewLayer!
+    
+    var camPosition = CamPosition.back
+    
     init(with bounds: CGRect) {
-        captureSession = setUpCameraSession()
+        setUpCam(with: bounds, position: camPosition)
+    }
+    
+    func switchCam(with bounds: CGRect) {
+        camPosition.switchPosition()
+        captureSession.beginConfiguration()
+        captureSession.removeInput(captureSession.inputs.first! as! AVCaptureInput)
+        captureSession.addInput(try! AVCaptureDeviceInput(device: getCamera(with: camPosition.toAVCapturePosition())))
+        captureSession.commitConfiguration()
+    }
+    
+    private func setUpCam(with bounds: CGRect, position: CamPosition) {
+        captureSession = setUpCameraSession(with: position)
         previewLayer = videoLayerSetUp(with: captureSession)
         previewLayer.frame = bounds
         previewLayer.videoGravity = AVLayerVideoGravityResize
     }
-
-    private func setUpCameraSession() -> AVCaptureSession {
-        let captureSession = AVCaptureSession()
-        guard let captureDevice = getBackCamera() else {
+    
+    private func setUpCameraSession(with position: CamPosition) -> AVCaptureSession {
+        let session = AVCaptureSession()
+        guard let captureDevice = getCamera(with: position.toAVCapturePosition()) else {
             fatalError()
         }
         let backCamera = captureDevice
         let input = try! AVCaptureDeviceInput(device: backCamera)
         
-        captureSession.addInput(input)
+        session.addInput(input)
         output = AVCapturePhotoOutput()
-        captureSession.addOutput(output)
-        captureSession.startRunning()
-        return captureSession
+        session.addOutput(output)
+        session.startRunning()
+        return session
     }
     
     private func videoLayerSetUp(with session: AVCaptureSession) -> AVCaptureVideoPreviewLayer? {
@@ -43,12 +83,12 @@ class CameraService {
         return videoLayer
     }
     
-    private func getBackCamera() -> AVCaptureDevice? {
-        guard let avCaptureDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: .back) else {
+    private func getCamera(with position: AVCaptureDevicePosition) -> AVCaptureDevice? {
+        guard let avCaptureDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: position) else {
             return nil
         }
         for device in avCaptureDeviceDiscoverySession.devices {
-            if device.position == .back {
+            if device.position == position {
                 return device
             }
         }
@@ -57,7 +97,11 @@ class CameraService {
     
     func shutterDidTaped(with object: AVCapturePhotoCaptureDelegate) {
         let settingsForMonitoring = AVCapturePhotoSettings()
-        settingsForMonitoring.flashMode = .auto
+        if camPosition == .back {
+            settingsForMonitoring.flashMode = .auto
+        } else {
+            settingsForMonitoring.flashMode = .off
+        }
         settingsForMonitoring.isAutoStillImageStabilizationEnabled = true
         settingsForMonitoring.isHighResolutionPhotoEnabled = false
         // シャッターを切る

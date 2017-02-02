@@ -22,41 +22,27 @@ class CameraViewModel: NSObject {
     var imageData: Variable<Data>!
     let disposeBag = DisposeBag()
     var cameraService: CameraService!
-    
-    init(input: (shutterTaps: Driver<Void>, removeTaps: Driver<Void>), bounds: CGRect) {
+    var isBack = true
+        
+    init(input: (shutterTaps: Driver<Void>, removeTaps: Driver<Void>, switchCamTaps: Driver<Void>), bounds: CGRect) {
         super.init()
         self.cameraService = CameraService(with: bounds)
-        isCameraReady = input.removeTaps.map {
+        
+        let camDidSwitched = input.switchCamTaps.map {
+            self.cameraService.switchCam(with: bounds)
+        }.asDriver()
+        
+        isCameraReady = Observable.of(camDidSwitched,input.removeTaps).merge().asDriver(onErrorJustReturn: ()).startWith(Void()).map {_ in
+            self.isBack = self.cameraService.camPosition.isBack()
             self.videoLayer = self.cameraService.previewLayer
         }
+        
         imageData = Variable(Data())
         takenPhoto = imageData.asDriver()
         
         photoDidBeTaken = input.shutterTaps.map {
             self.cameraService.shutterDidTaped(with: self)
         }.asDriver()
-        
-//        input.viewDidRotate.drive(onNext: { (bounds) in
-//            self.videoLayer.frame = bounds
-//            if self.videoLayer.connection.isVideoOrientationSupported {
-//                self.videoLayer.connection.videoOrientation = self.interfaceOrientationToVideoOrientation(orientation: UIApplication.shared.statusBarOrientation)
-//            }
-//        }).addDisposableTo(disposeBag)
-    }
-    
-    private func interfaceOrientationToVideoOrientation(orientation: UIInterfaceOrientation) -> AVCaptureVideoOrientation {
-        switch(orientation) {
-        case .portrait:
-            return .portrait
-        case .portraitUpsideDown:
-            return .portraitUpsideDown
-        case .landscapeLeft:
-            return .landscapeLeft
-        case .landscapeRight:
-            return .landscapeRight
-        default:
-            return .portrait
-        }
     }
 }
 
