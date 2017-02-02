@@ -36,17 +36,18 @@ enum CamPosition {
         return self == .back
     }
 }
+
 class CameraService {
     var output: AVCapturePhotoOutput!
     var captureSession: AVCaptureSession!
     var previewLayer: AVCaptureVideoPreviewLayer!
-    
     var camPosition = CamPosition.back
     
     init(with bounds: CGRect) {
         setUpCam(with: bounds, position: camPosition)
     }
     
+    // switch front and back cams
     func switchCam(with bounds: CGRect) {
         camPosition.switchPosition()
         captureSession.beginConfiguration()
@@ -55,6 +56,7 @@ class CameraService {
         captureSession.commitConfiguration()
     }
     
+    // initialize the camera as the app starts
     private func setUpCam(with bounds: CGRect, position: CamPosition) {
         captureSession = setUpCameraSession(with: position)
         previewLayer = videoLayerSetUp(with: captureSession)
@@ -62,27 +64,31 @@ class CameraService {
         previewLayer.videoGravity = AVLayerVideoGravityResize
     }
     
+    // set up a camera session
     private func setUpCameraSession(with position: CamPosition) -> AVCaptureSession {
         let session = AVCaptureSession()
         guard let captureDevice = getCamera(with: position.toAVCapturePosition()) else {
             fatalError()
         }
-        let backCamera = captureDevice
-        let input = try! AVCaptureDeviceInput(device: backCamera)
         
+        let input = try! AVCaptureDeviceInput(device: captureDevice)
         session.addInput(input)
+        
         output = AVCapturePhotoOutput()
         session.addOutput(output)
+        
         session.startRunning()
         return session
     }
     
+    // set up a video layer
     private func videoLayerSetUp(with session: AVCaptureSession) -> AVCaptureVideoPreviewLayer? {
         let videoLayer = AVCaptureVideoPreviewLayer(session: session)
         videoLayer?.videoGravity = AVLayerVideoGravityResizeAspectFill
         return videoLayer
     }
     
+    // get a camera object with a position
     private func getCamera(with position: AVCaptureDevicePosition) -> AVCaptureDevice? {
         guard let avCaptureDeviceDiscoverySession = AVCaptureDeviceDiscoverySession(deviceTypes: [.builtInWideAngleCamera], mediaType: AVMediaTypeVideo, position: position) else {
             return nil
@@ -95,6 +101,7 @@ class CameraService {
         return nil
     }
     
+    // processes run when shutter button is tapped
     func shutterDidTaped(with object: AVCapturePhotoCaptureDelegate) {
         let settingsForMonitoring = AVCapturePhotoSettings()
         if camPosition == .back {
@@ -107,5 +114,4 @@ class CameraService {
         // シャッターを切る
         output.capturePhoto(with: settingsForMonitoring, delegate: object)
     }
-
 }

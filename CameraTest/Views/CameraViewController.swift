@@ -18,13 +18,17 @@ class CameraViewController: UIViewController {
     @IBOutlet weak var shutterOutlet: UIButton!
     
     var viewModel: CameraViewModel!
-    let disposeBag = DisposeBag()
     var deviceOrientation: Variable<UIDeviceOrientation>!
+    let disposeBag = DisposeBag()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         
+        // set ContentMode for result imageView
         imageView.contentMode = .scaleAspectFit
         
+        // Driver which sends remove button tap
+        // starts with void not display result when the app just begins
         let removeTaps = removeButton.rx.tap.asDriver().map {
             self.removeButton.isHidden = true
             return Void()
@@ -32,6 +36,7 @@ class CameraViewController: UIViewController {
         
         viewModel = CameraViewModel(input: (shutterTaps: shutterOutlet.rx.tap.asDriver(), removeTaps: removeTaps, switchCamTaps: switchCamButton.rx.tap.asDriver()), bounds: view.bounds)
         
+        // subscribes when camera session is ready
         viewModel.isCameraReady.drive(onNext: {
             self.shutterOutlet.isHidden = false
             self.switchCamButton.isHidden = false
@@ -41,17 +46,22 @@ class CameraViewController: UIViewController {
             self.view.bringSubview(toFront: self.switchCamButton)
         }).addDisposableTo(disposeBag)
         
+        // subscribes taken photo and skips once to avoid running when the app just begins
         viewModel.takenPhoto.skip(1).map(){ imageData in
             self.removeButton.isHidden = false
             self.view.bringSubview(toFront: self.removeButton)
             self.shutterOutlet.isHidden = true
             self.switchCamButton.isHidden = true
             self.imageView.isHidden = false
-            
-            return UIImage(cgImage: UIImage(data: imageData)!.cgImage!, scale: 1.0, orientation: self.imageOrientation(from: UIDevice.current.orientation))
+            self.viewModel.videoLayer.removeFromSuperlayer()
+            let image = UIImage(cgImage: UIImage(data: imageData)!.cgImage!, scale: 1.0, orientation: self.imageOrientation(from: UIDevice.current.orientation))
+            // save image
+//            UIImageWriteToSavedPhotosAlbum(image, nil, nil, nil)
+            return image
         }
         .drive(imageView.rx.image).addDisposableTo(disposeBag)
         
+        // subscribes when the photo's taken
         viewModel.photoDidBeTaken.drive(onNext: {
             self.viewModel.videoLayer.removeFromSuperlayer()
         }).addDisposableTo(disposeBag)
@@ -63,29 +73,31 @@ class CameraViewController: UIViewController {
                 self.rotate(with: orientation)
             }).addDisposableTo(disposeBag)
         
+        // observes when the device's rotated
         NotificationCenter.default.addObserver(self, selector: #selector(CameraViewController.setDeviceOrientation), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
     }
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
     }
     
     override var shouldAutorotate: Bool {
         return false
     }
     
+    // set device orientation when the device's rotated
     func setDeviceOrientation() {
         deviceOrientation.value = UIDevice.current.orientation
     }
     
+    // rotate the items when the device's rotated
     func rotate(with orientation: UIDeviceOrientation) {
         UIView.animate(withDuration: 0.7, animations: {
             self.shutterOutlet.transform = CGAffineTransform(rotationAngle: self.angle(for: orientation))
+            self.switchCamButton.transform = CGAffineTransform(rotationAngle: self.angle(for: orientation))
         })
     }
 
-    
     private func imageOrientation(from deviceOrientation: UIDeviceOrientation) -> UIImageOrientation {
         if viewModel.isBack {
             switch(deviceOrientation) {
