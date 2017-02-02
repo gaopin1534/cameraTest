@@ -35,6 +35,28 @@ class CameraViewModel: NSObject {
         photoDidBeTaken = input.shutterTaps.map {
             self.cameraService.shutterDidTaped(with: self)
         }.asDriver()
+        
+//        input.viewDidRotate.drive(onNext: { (bounds) in
+//            self.videoLayer.frame = bounds
+//            if self.videoLayer.connection.isVideoOrientationSupported {
+//                self.videoLayer.connection.videoOrientation = self.interfaceOrientationToVideoOrientation(orientation: UIApplication.shared.statusBarOrientation)
+//            }
+//        }).addDisposableTo(disposeBag)
+    }
+    
+    private func interfaceOrientationToVideoOrientation(orientation: UIInterfaceOrientation) -> AVCaptureVideoOrientation {
+        switch(orientation) {
+        case .portrait:
+            return .portrait
+        case .portraitUpsideDown:
+            return .portraitUpsideDown
+        case .landscapeLeft:
+            return .landscapeLeft
+        case .landscapeRight:
+            return .landscapeRight
+        default:
+            return .portrait
+        }
     }
 }
 

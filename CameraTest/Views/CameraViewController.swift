@@ -46,11 +46,34 @@ class CameraViewController: UIViewController {
         viewModel.photoDidBeTaken.drive(onNext: {
             self.viewModel.videoLayer.removeFromSuperlayer()
         }).addDisposableTo(disposeBag)
+        
+        NotificationCenter.default.addObserver(self, selector: #selector(CameraViewController.rotate), name: NSNotification.Name.UIDeviceOrientationDidChange, object: nil)
     }
-
+    
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
+    }
+    
+    func rotate() {
+        UIView.animate(withDuration: 0.7, animations: {
+            self.shutterOutlet.transform = CGAffineTransform(rotationAngle: self.angle())
+        })
+    }
+    
+    private func angle() -> CGFloat {
+        switch(UIDevice.current.orientation) {
+        case .portrait:
+            return 0
+        case .landscapeLeft:
+            return CGFloat(90*M_PI/180)
+        case .landscapeRight:
+            return CGFloat(-90*M_PI/180)
+        case .portraitUpsideDown:
+            return CGFloat(M_PI)
+        default:
+            return 0
+        }
     }
     
 }
