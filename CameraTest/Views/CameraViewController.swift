@@ -22,23 +22,27 @@ class CameraViewController: UIViewController {
 
         let removeTaps = removeButton.rx.tap.asDriver().map {
             self.removeButton.isHidden = true
-            return self.view.bounds
-        }.startWith(self.view.bounds)
-        viewModel = CameraViewModel(input: (shutterTaps: shutterOutlet.rx.tap.asDriver(), removeTaps: removeTaps))
+            return Void()
+        }.startWith(Void())
+        
+        viewModel = CameraViewModel(input: (shutterTaps: shutterOutlet.rx.tap.asDriver(), removeTaps: removeTaps), bounds: view.bounds)
         
         viewModel.isCameraReady.drive(onNext: {
             self.shutterOutlet.isHidden = false
+            self.imageView.isHidden = true
             self.view.layer.addSublayer(self.viewModel.videoLayer)
             self.view.bringSubview(toFront: self.shutterOutlet)
         }).addDisposableTo(disposeBag)
         
-        viewModel.takenPhoto.skip(1).map(){ image in
+        viewModel.takenPhoto.skip(1).map(){ imageData in
             self.removeButton.isHidden = false
             self.view.bringSubview(toFront: self.removeButton)
             self.shutterOutlet.isHidden = true
-            return image
+            self.imageView.isHidden = false
+            return UIImage(data: imageData)!
         }
         .drive(imageView.rx.image).addDisposableTo(disposeBag)
+        
         viewModel.photoDidBeTaken.drive(onNext: {
             self.viewModel.videoLayer.removeFromSuperlayer()
         }).addDisposableTo(disposeBag)
@@ -48,7 +52,6 @@ class CameraViewController: UIViewController {
         super.didReceiveMemoryWarning()
         // Dispose of any resources that can be recreated.
     }
-
-
+    
 }
 

@@ -16,22 +16,21 @@ class CameraViewModel: NSObject {
     var backCamera: AVCaptureDevice!
     var output: AVCapturePhotoOutput!
     var videoLayer: AVCaptureVideoPreviewLayer!
-    var takenPhoto: Driver<UIImage>!
+    var takenPhoto: Driver<Data>!
     var photoDidBeTaken: Driver<Void>!
     var isCameraReady: Driver<Void>!
-    var image: Variable<UIImage>!
+    var imageData: Variable<Data>!
     let disposeBag = DisposeBag()
     var cameraService: CameraService!
     
-    init(input: (shutterTaps: Driver<Void>, removeTaps: Driver<CGRect>)) {
+    init(input: (shutterTaps: Driver<Void>, removeTaps: Driver<Void>), bounds: CGRect) {
         super.init()
-        self.cameraService = CameraService()
-        isCameraReady = input.removeTaps.map { bounds in
-            self.cameraService.previewLayer.frame = bounds
+        self.cameraService = CameraService(with: bounds)
+        isCameraReady = input.removeTaps.map {
             self.videoLayer = self.cameraService.previewLayer
         }
-        image = Variable(UIImage())
-        takenPhoto = image.asDriver()
+        imageData = Variable(Data())
+        takenPhoto = imageData.asDriver()
         
         photoDidBeTaken = input.shutterTaps.map {
             self.cameraService.shutterDidTaped(with: self)
@@ -47,11 +46,7 @@ extension CameraViewModel: AVCapturePhotoCaptureDelegate {
         guard let photoData = AVCapturePhotoOutput.jpegPhotoDataRepresentation(forJPEGSampleBuffer: photoSampleBuffer, previewPhotoSampleBuffer: previewPhotoSampleBuffer) else {
             return
         }
-        guard let takenImage = UIImage(data: photoData) else {
-            return
-        }
-        image.value = takenImage
-        videoLayer.removeFromSuperlayer()
+        imageData.value = photoData
     }
 }
 
